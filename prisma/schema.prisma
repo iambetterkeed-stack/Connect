@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  username      String    @unique
+  displayName   String?
+  avatar        String?
+  status        String    @default("offline")
+  password      String?
+  googleId      String?   @unique
+  githubId      String?   @unique
+  discordId     String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  servers       ServerMember[]
+  ownedServers  Server[]  @relation("ServerOwner")
+  messages      Message[]
+  dmMessages    DirectMessage[]
+  dmRooms       RoomMember[]
+  friendships   Friendship[] @relation("UserFriendships")
+  friendOf      Friendship[] @relation("FriendOf")
+  reactions     MessageReaction[]
+  notifications Notification[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Server {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  icon        String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner   User           @relation("ServerOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members ServerMember[]
+  channels Channel[]
+  roles   Role[]
+}
+
+model Channel {
+  id        String   @id @default(cuid())
+  serverId  String
+  name      String
+  type      String   @default("text") // text, voice, announcement
+  position  Int      @default(0)
+  categoryId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  server   Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  messages Message[]
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  channelId   String
+  authorId    String
+  content     String
+  attachments String?  // JSON array of file URLs
+  replyToId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  channel   Channel            @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  author    User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  replyTo   Message?           @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   Message[]          @relation("MessageReplies")
+  reactions MessageReaction[]
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+}
+
+model DirectMessageRoom {
+  id        String   @id @default(cuid())
+  name      String?  // For group DMs
+  isGroup   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members RoomMember[]
+  messages DirectMessage[]
+}
+
+model DirectMessage {
+  id          String   @id @default(cuid())
+  roomId      String
+  authorId    String
+  content     String
+  attachments String?  // JSON array of file URLs
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  room   DirectMessageRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  author User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model RoomMember {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  room DirectMessageRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  serverId    String
+  name        String
+  color       String   @default("#ffffff")
+  permissions Int      @default(0) // Bitmask for permissions
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  server  Server         @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  members ServerMember[] @relation("RoleMembers")
+}
+
+model ServerMember {
+  id        String   @id @default(cuid())
+  serverId  String
+  userId    String
+  roleIds  String[] // Array of role IDs
+  nickname  String?
+  joinedAt  DateTime @default(now())
+
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roles  Role[] @relation("RoleMembers")
+
+  @@unique([serverId, userId])
+}
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userId    String
+  friendId  String
+  status    String   @default("pending") // pending, accepted, blocked
+  createdAt DateTime @default(now())
+
+  user   User @relation("UserFriendships", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("FriendOf", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // mention, dm, server_invite, etc.
+  messageId String?
+  serverId  String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

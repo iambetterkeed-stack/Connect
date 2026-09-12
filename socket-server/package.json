@@ -1,0 +1,19 @@
+{
+  "name": "connect-socket-server",
+  "version": "1.0.0",
+  "description": "Socket.io server for Connect real-time messaging",
+  "main": "server.ts",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "start": "tsx server.ts"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.3",
+    "@prisma/client": "^7.10.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "@types/node": "^20.17.6"
+  }
+}

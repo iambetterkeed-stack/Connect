@@ -1,69 +1,276 @@
-import Image from "next/image";
+"use client"
+
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import ServerSidebar from "@/components/layout/ServerSidebar"
+import ChannelSidebar from "@/components/layout/ChannelSidebar"
+import MessageList from "@/components/messages/MessageList"
+import MessageInput from "@/components/messages/MessageInput"
+import CreateServerModal from "@/components/servers/CreateServerModal"
+import CreateChannelModal from "@/components/servers/CreateChannelModal"
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [currentServerId, setCurrentServerId] = useState<string | undefined>()
+  const [currentChannelId, setCurrentChannelId] = useState<string | undefined>()
+  const [servers, setServers] = useState<any[]>([])
+  const [channels, setChannels] = useState<any[]>([])
+  const [messages, setMessages] = useState<any[]>([])
+  const [showCreateServer, setShowCreateServer] = useState(false)
+  const [showCreateChannel, setShowCreateChannel] = useState(false)
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      window.location.href = "/login"
+    }
+  }, [status])
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetchServers()
+    }
+  }, [status])
+
+  const fetchServers = async () => {
+    try {
+      const response = await fetch("/api/servers")
+      const data = await response.json()
+      setServers(data.servers || [])
+    } catch (error) {
+      console.error("Failed to fetch servers:", error)
+    }
+  }
+
+  const fetchChannels = async (serverId: string) => {
+    try {
+      const response = await fetch(`/api/servers/${serverId}/channels`)
+      const data = await response.json()
+      setChannels(data.channels || [])
+    } catch (error) {
+      console.error("Failed to fetch channels:", error)
+    }
+  }
+
+  const fetchMessages = async (channelId: string) => {
+    try {
+      const response = await fetch(`/api/channels/${channelId}/messages`)
+      const data = await response.json()
+      setMessages(data.messages || [])
+    } catch (error) {
+      console.error("Failed to fetch messages:", error)
+    }
+  }
+
+  const handleServerSelect = async (serverId: string) => {
+    setCurrentServerId(serverId || undefined)
+    setCurrentChannelId(undefined)
+    setMessages([])
+    
+    if (serverId) {
+      await fetchChannels(serverId)
+    } else {
+      setChannels([])
+    }
+  }
+
+  const handleChannelSelect = async (channelId: string) => {
+    setCurrentChannelId(channelId)
+    await fetchMessages(channelId)
+  }
+
+  const handleCreateServer = async (name: string, description?: string) => {
+    try {
+      const response = await fetch("/api/servers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, description })
+      })
+      const data = await response.json()
+      if (response.ok) {
+        fetchServers()
+        // Select the newly created server
+        if (data.server?.id) {
+          handleServerSelect(data.server.id)
+        }
+      } else {
+        throw new Error(data.error || "Failed to create server")
+      }
+    } catch (error) {
+      console.error("Failed to create server:", error)
+      throw error
+    }
+  }
+
+  const handleCreateChannel = async (name: string, type: string) => {
+    if (!currentServerId) return
+    
+    try {
+      const response = await fetch(`/api/servers/${currentServerId}/channels`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, type })
+      })
+      const data = await response.json()
+      if (response.ok) {
+        fetchChannels(currentServerId)
+        // Select the newly created channel
+        if (data.channel?.id) {
+          handleChannelSelect(data.channel.id)
+        }
+      } else {
+        throw new Error(data.error || "Failed to create channel")
+      }
+    } catch (error) {
+      console.error("Failed to create channel:", error)
+      throw error
+    }
+  }
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </div>
+    )
+  }
+
+  if (!session) {
+    return null
+  }
+
+  const currentServer = servers.find(s => s.id === currentServerId)
+  const currentChannel = channels.find(c => c.id === currentChannelId)
+
+  return (
+    <div className="min-h-screen bg-[#0f172a]">
+      <div className="flex h-screen">
+        {/* Server Sidebar */}
+        <ServerSidebar
+          servers={servers}
+          currentServerId={currentServerId}
+          onServerSelect={handleServerSelect}
+          onCreateServer={() => setShowCreateServer(true)}
+        />
+
+        {/* Channel Sidebar */}
+        {currentServer ? (
+          <ChannelSidebar
+            channels={channels}
+            currentChannelId={currentChannelId}
+            onChannelSelect={handleChannelSelect}
+            onCreateChannel={() => setShowCreateChannel(true)}
+            serverName={currentServer.name}
+          />
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-60 bg-[#1e293b] flex items-center justify-center"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <p className="text-gray-400 text-sm">Select a server</p>
+          </motion.div>
+        )}
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          {currentChannel ? (
+            <>
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="h-12 bg-[#1e293b] border-b border-[#334155] flex items-center px-4"
+              >
+                <span className="text-white font-semibold">{currentChannel.name}</span>
+              </motion.div>
+              <MessageList 
+                messages={messages} 
+                channelId={currentChannelId} 
+                onMessagesUpdate={(updater) => setMessages(prev => updater(prev))}
+              />
+              <MessageInput channelId={currentChannelId} />
+            </>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex-1 flex items-center justify-center"
+            >
+              <div className="text-center">
+                <motion.img 
+                  src="/logo.svg" 
+                  alt="Connect" 
+                  className="w-32 h-32 mx-auto mb-4"
+                  animate={{ 
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, -5, 0]
+                  }}
+                  transition={{ 
+                    duration: 2, 
+                    repeat: Infinity,
+                    repeatDelay: 3
+                  }}
+                />
+                <h1 className="text-3xl font-bold text-white mb-2">Welcome to Connect!</h1>
+                <p className="text-gray-400 mb-4">
+                  {currentServer 
+                    ? `Welcome to ${currentServer.name}! Select a channel to start chatting.`
+                    : "Select a server to get started, or create a new one."
+                  }
+                </p>
+                {!currentServer && (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button 
+                      onClick={() => setShowCreateServer(true)} 
+                      className="bg-[#3b82f6] hover:bg-[#2563eb]"
+                    >
+                      Create Server
+                    </Button>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
         </div>
-      </main>
+
+        {/* Members Sidebar */}
+        <motion.div 
+          initial={{ x: 20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          className="w-60 bg-[#1e293b] p-4"
+        >
+          <h3 className="text-white font-semibold mb-4">Online</h3>
+          <motion.div 
+            className="flex items-center gap-2 mb-2"
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="w-8 h-8 bg-[#3b82f6] rounded-full"></div>
+            <span className="text-white text-sm">{session.user?.name || "User"}</span>
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* Modals */}
+      <CreateServerModal
+        isOpen={showCreateServer}
+        onClose={() => setShowCreateServer(false)}
+        onCreateServer={handleCreateServer}
+      />
+      <CreateChannelModal
+        isOpen={showCreateChannel}
+        onClose={() => setShowCreateChannel(false)}
+        onCreateChannel={handleCreateChannel}
+      />
     </div>
-  );
+  )
 }

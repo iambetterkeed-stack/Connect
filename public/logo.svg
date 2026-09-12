@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background glow -->
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0" />
+    </radialGradient>
+    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff" />
+      <stop offset="100%" style="stop-color:#e5e7eb" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Glow effect -->
+  <circle cx="100" cy="100" r="90" fill="url(#glow)" />
+  
+  <!-- Antenna -->
+  <line x1="100" y1="45" x2="100" y2="25" stroke="#9ca3af" stroke-width="3" stroke-linecap="round" />
+  <circle cx="100" cy="22" r="6" fill="#3b82f6">
+    <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- Head -->
+  <ellipse cx="100" cy="70" rx="35" ry="30" fill="url(#bodyGradient)" stroke="#d1d5db" stroke-width="2" />
+  
+  <!-- Eyes -->
+  <ellipse cx="85" cy="65" rx="8" ry="10" fill="#1e3a8a" />
+  <ellipse cx="115" cy="65" rx="8" ry="10" fill="#1e3a8a" />
+  <!-- Eye shine -->
+  <circle cx="87" cy="62" r="3" fill="#ffffff" opacity="0.8" />
+  <circle cx="117" cy="62" r="3" fill="#ffffff" opacity="0.8" />
+  
+  <!-- Mouth (friendly smile) -->
+  <path d="M 90 80 Q 100 88 110 80" stroke="#1e3a8a" stroke-width="2" fill="none" stroke-linecap="round" />
+  
+  <!-- Body -->
+  <rect x="70" y="95" width="60" height="50" rx="15" fill="url(#bodyGradient)" stroke="#d1d5db" stroke-width="2" />
+  
+  <!-- Heart-shaped chest plate -->
+  <path d="M 100 115 C 100 115 85 105 85 100 C 85 95 90 92 93 95 C 96 98 100 102 100 102 C 100 102 104 98 107 95 C 110 92 115 95 115 100 C 115 105 100 115 100 115 Z" fill="#8b5cf6" />
+  
+  <!-- Arms (wave gesture) -->
+  <!-- Left arm -->
+  <path d="M 70 110 Q 55 115 50 105" stroke="#d1d5db" stroke-width="6" fill="none" stroke-linecap="round" />
+  <circle cx="50" cy="105" r="6" fill="#ffffff" stroke="#d1d5db" stroke-width="2" />
+  
+  <!-- Right arm (waving) -->
+  <path d="M 130 110 Q 145 100 155 85" stroke="#d1d5db" stroke-width="6" fill="none" stroke-linecap="round">
+    <animate attributeName="d" values="M 130 110 Q 145 100 155 85;M 130 110 Q 145 95 150 90;M 130 110 Q 145 100 155 85" dur="1s" repeatCount="indefinite" />
+  </path>
+  <circle cx="155" cy="85" r="6" fill="#ffffff" stroke="#d1d5db" stroke-width="2">
+    <animate attributeName="cx" values="155;150;155" dur="1s" repeatCount="indefinite" />
+    <animate attributeName="cy" values="85;90;85" dur="1s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- Legs -->
+  <rect x="80" y="140" width="12" height="25" rx="5" fill="url(#bodyGradient)" stroke="#d1d5db" stroke-width="2" />
+  <rect x="108" y="140" width="12" height="25" rx="5" fill="url(#bodyGradient)" stroke="#d1d5db" stroke-width="2" />
+  
+  <!-- Feet -->
+  <ellipse cx="86" cy="168" rx="10" ry="5" fill="#3b82f6" />
+  <ellipse cx="114" cy="168" rx="10" ry="5" fill="#3b82f6" />
+</svg>
